@@ -1,6 +1,16 @@
-import { _decorator, Component, EventTouch, Node, tween, Vec2, Vec3 } from "cc";
+import {
+  _decorator,
+  Component,
+  EventTouch,
+  Node,
+  tween,
+  Vec2,
+  Vec3,
+  UIOpacity,
+} from "cc";
 import { IColData, IRowData } from "./types";
 import Table from "./data/Table";
+import { App } from "./App";
 const { ccclass, property } = _decorator;
 
 @ccclass("Floor")
@@ -39,20 +49,30 @@ export class Floor extends Component {
   }
 
   private onTouchStart(e: EventTouch) {
+    console.log(`onTouchStart`);
     if (this.isTouch) {
       return;
     }
+    // console.log(e.currentTarget);
     this.isTouch = true;
     this.pos.start = e.touch.getLocation();
   }
 
   private onTouchEnd(e: EventTouch) {
+    console.log(`onTouchEnd`);
     if (!this.isTouch) {
       return;
     }
+    // console.log(e.currentTarget);
     this.isTouch = false;
     this.pos.end = e.touch.getLocation();
     this.computedTouch(this.pos.start, this.pos.end);
+    this.pos = {
+      /** 开始落点 */
+      start: Vec2.ZERO,
+      /** 结束落点 */
+      end: Vec2.ZERO,
+    };
   }
 
   /**
@@ -64,6 +84,9 @@ export class Floor extends Component {
    * 2. 根据二点直接判断出滑动方向
    */
   private computedTouch(start: Vec2, end: Vec2) {
+    if (start.equals(end)) {
+      return;
+    }
     const dir = end.subtract(start).normalize();
     /** 根据朝向计算出夹角弧度 */
     const angle = dir.signAngle(new Vec2(1, 0));
@@ -111,28 +134,100 @@ export class Floor extends Component {
       this.swap(to);
       return;
     }
-    this.fit();
+    this.levelUp(to);
   }
 
   /**
-   * 交换节点的动画，并不真的交换
-   *
+   * 移动节点
    * 1. 当前节点与目标节点交换位置(世界坐标系)
    * @param to 目标节点
    */
   private swap(to: IColData) {
-    const formVec3 = new Vec3(
-      this.node.worldPosition.x,
-      this.node.worldPosition.y
-    );
-    const toVec3 = new Vec3(to.node.worldPosition.x, to.node.worldPosition.y);
-    const moveTo = tween().to(0.5, { worldPosition: toVec3 });
-    const moveFrom = tween().to(0.5, { worldPosition: formVec3 });
+    const { moveTo, moveFrom } = this.getTweenMove(to);
     tween(this.node).sequence(moveTo, moveFrom).start();
   }
 
   /**
    * 当前节点与目标节点合体并升级
+   *
+   * @param to 目标节点
    */
-  private fit() {}
+  private levelUp(to: IColData) {
+    const tw = this.getTweenMove(to);
+    this.reRenderNode(tw);
+    this.renderLevelUp(to, tw);
+  }
+
+  /**
+   * 获取缓动的数据
+   * @param to 目标节点
+   */
+  private getTweenMove(to: IColData) {
+    const formVec3 = new Vec3(
+      this.node.worldPosition.x,
+      this.node.worldPosition.y
+    );
+    const toVec3 = new Vec3(to.node.worldPosition.x, to.node.worldPosition.y);
+    const moveTo = tween().to(0.25, { worldPosition: toVec3 });
+    const moveFrom = tween().to(0.25, { worldPosition: formVec3 });
+    return { moveTo, moveFrom, formVec3 };
+  }
+
+  /**
+   * 渲染升级
+   * @param to 目标节点
+   * @param tw 缓动数据
+   */
+  private renderLevelUp(to, tw: ReturnType<typeof this.getTweenMove>) {
+    // todo !!!踩坑 缓动改变scale会使触摸失效
+
+    // tween(to.node)
+    //   .to(0.1, { scale: new Vec3(1, 1.5) })
+    //   .to(0.1, { scale: new Vec3(1.5, 1) })
+    //   .to(0.1, { scale: new Vec3(1, 1) })
+    //   .start();
+    tween(this.node).then(tw.moveTo.delay(0.25)).start();
+    // 目标节点升级
+    to.level++;
+    Table.appCtrl.renderLevel(to.level, to.node.getChildByName("level"));
+  }
+
+  /**
+   * 重新渲染
+   * @param tw 缓动数据
+   */
+  private reRenderNode(tw: ReturnType<typeof this.getTweenMove>) {
+    tween(this.node.getComponent(UIOpacity))
+      .to(0.25, {
+        opacity: 0,
+      })
+      .then(tw.moveFrom)
+      .call(() => {
+        console.log(`重新渲染`);
+        // 当前节点重新渲染
+        this.data.level = Table.appCtrl.randomLevel();
+        Table.appCtrl.renderLevel(
+          this.data.level,
+          this.node.getChildByName("level")
+        );
+        this.node.worldPosition = tw.formVec3;
+        // this.node.scale = new Vec3(0, 0);
+        tween(this.node.getComponent(UIOpacity))
+          .to(0.25, {
+            opacity: 255,
+          })
+          .start();
+      })
+      .start();
+
+    // tween(this.node)
+    //   .to(0.1, {
+    //     scale: new Vec3(1.5, 1.5),
+    //   })
+    //   .to(0.1, {
+    //     scale: new Vec3(1.0, 1.0),
+    //   })
+    //   .repeat(3)
+    //   .start();
+  }
 }

@@ -39,6 +39,7 @@ export class App extends Component {
 
   /** 渲染游戏 */
   private initGame() {
+    Table.appCtrl = this.node.getComponent(App);
     this.createTable();
     this.createRow();
   }
@@ -81,39 +82,77 @@ export class App extends Component {
    * 1. 游戏一开始阶段只有1级与2级
    */
   private createFloor(rowNode: Node, rowZIndex: number): IColData[] {
-    let node: Node;
-    let level: number;
     const arr = new Array(
       rowZIndex === this.rowCount - 1 ? this.colCount - 1 : this.colCount
     ).fill(0);
+    let level: number;
     const cols: IColData[] = arr.map((_, index) => {
-      level = Math.floor(Math.random() * 10) % 2 === 0 ? 1 : 2;
-      node = instantiate(this.floorPrefab);
-      node.insertChild(this.createLevel(level), 0);
-      node.setPosition(
-        new Vec3(index * this.colStepVec3.x, index * this.colStepVec3.y)
-      );
-      rowNode.insertChild(node, index);
-      const data = {
-        node,
-        rowZIndex,
-        colZIndex: index,
-        level,
-      };
-      node.getComponent(Floor).data = data;
-      return data;
+      level = this.randomLevel();
+      return this.createSeed(rowNode, index, rowZIndex, level).data;
     });
     return cols;
   }
 
+  /** 随机level */
+  public randomLevel() {
+    return Math.floor(Math.random() * 10) % 2 === 0 ? 1 : 2;
+  }
+
   /**
-   * 创建level
+   * 创建种子节点
+   * @param rowNode 行节点
+   * @param colZIndex 列索引
+   * @param rowZIndex 行索引
+   */
+  public createSeed(
+    rowNode: Node,
+    colZIndex: number,
+    rowZIndex: number,
+    level: number
+  ) {
+    const node = instantiate(this.floorPrefab);
+    node.insertChild(this.renderLevel(level), 0);
+    node.setPosition(
+      new Vec3(colZIndex * this.colStepVec3.x, colZIndex * this.colStepVec3.y)
+    );
+    rowNode.insertChild(node, colZIndex);
+    const data = {
+      node,
+      rowZIndex,
+      colZIndex,
+      level,
+    };
+    node.getComponent(Floor).data = data;
+    return {
+      node,
+      data,
+    };
+  }
+
+  /**
+   * 渲染level
+   * @param node 节点
    * @param level 等级
    */
-  private createLevel(level: number) {
-    const node = new Node();
-    const sprite = node.addComponent(Sprite);
+  public renderLevel(level: number, node: Node = null) {
+    if (!node) {
+      node = new Node();
+      node.name = "level";
+    }
+    const sprite = node.getComponent(Sprite) ?? node.addComponent(Sprite);
     LoadUtils.loadRes(sprite, `images/level${level}/spriteFrame`);
     return node;
+  }
+
+  /**
+   * 移除种子节点
+   * @param colZIndex 列索引
+   * @param rowZIndex 行索引
+   */
+  public removeSeed(colZIndex: number, rowZIndex: number) {
+    Table.rows[rowZIndex].node.removeChild(
+      Table.rows[rowZIndex].cols[colZIndex].node
+    );
+    Table.rows[rowZIndex].cols.splice(colZIndex, 1);
   }
 }
