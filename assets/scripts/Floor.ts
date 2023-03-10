@@ -8,7 +8,7 @@ import {
   Vec3,
   UIOpacity,
 } from "cc";
-import { IColData, IRowData } from "./types";
+import { IColData, IRowData, ISlideDirection } from "./types";
 import TableData from "./data/TableData";
 import TweenUtils from "./common/TweenUtils";
 const { ccclass, property } = _decorator;
@@ -19,6 +19,8 @@ export class Floor extends Component {
   private touchNode: Node;
 
   private isTouch = false;
+
+  private zIndex = 0;
 
   /** 当前的数据 */
   public data: IColData = {
@@ -48,6 +50,7 @@ export class Floor extends Component {
   };
 
   start() {
+    this.zIndex = TableData.rows.length;
     this.touchNode.on(Node.EventType.TOUCH_START, this.onTouchStart, this);
     this.touchNode.on(Node.EventType.TOUCH_END, this.onTouchEnd, this);
     this.touchNode.on(Node.EventType.TOUCH_CANCEL, this.onTouchEnd, this);
@@ -58,17 +61,14 @@ export class Floor extends Component {
     if (this.isTouch) {
       return;
     }
-    // console.log(e.currentTarget);
     this.isTouch = true;
     this.pos.start = e.touch.getLocation();
   }
 
   private onTouchEnd(e: EventTouch) {
-    console.log(`onTouchEnd`);
     if (!this.isTouch) {
       return;
     }
-    // console.log(e.currentTarget);
     this.isTouch = false;
     this.pos.end = e.touch.getLocation();
     this.computedTouch(this.pos.start, this.pos.end);
@@ -97,6 +97,8 @@ export class Floor extends Component {
     const angle = dir.signAngle(new Vec2(1, 0));
     /** 将弧度转换为欧拉角 */
     const deg = (angle / Math.PI) * 180;
+    // 保证触摸的层级高
+    this.data.node.parent.setSiblingIndex(this.zIndex++);
     this.judgeDirection(deg);
   }
 
@@ -106,23 +108,19 @@ export class Floor extends Component {
    */
   private judgeDirection(deg: number) {
     if (deg >= this.direction.UP[0] && deg < this.direction.UP[1]) {
-      // 向上
       this.handleUp();
       return;
     }
     if (deg >= this.direction.DOWN[0] && deg < this.direction.DOWN[1]) {
-      // 向下
-      console.info(`向下`);
+      this.handleDown();
       return;
     }
     if (deg >= this.direction.LEFT[0] && deg < this.direction.LEFT[1]) {
-      // 向左
-      console.info(`向左`);
+      this.handleLeft();
       return;
     }
     if (deg >= this.direction.RIGHT[0] && deg < this.direction.RIGHT[1]) {
-      // 向右
-      console.info(`向右`);
+      this.handleRight();
       return;
     }
   }
@@ -130,12 +128,51 @@ export class Floor extends Component {
   /** 处理向上滑 */
   private handleUp() {
     console.info(`向上`);
-    if (this.data.rowZIndex === 0) {
+    if (this.data.rowZIndex <= 0) {
       return;
     }
-    /** 目标节点 */
-    const to =
-      TableData.rows[this.data.rowZIndex - 1].cols[this.data.colZIndex];
+    const to = TableData.getDirToNode(this.data, ISlideDirection.UP);
+    this.judgeSwapOrLevelUp(to);
+  }
+
+  /** 处理向下滑 */
+  private handleDown() {
+    console.info(`向下`);
+    if (this.data.rowZIndex >= TableData.rows.length - 1) {
+      return;
+    }
+    const to = TableData.getDirToNode(this.data, ISlideDirection.DOWN);
+    this.judgeSwapOrLevelUp(to);
+  }
+
+  /** 处理向左滑 */
+  private handleLeft() {
+    console.info(`向左`);
+    if (this.data.colZIndex <= 0) {
+      return;
+    }
+    const to = TableData.getDirToNode(this.data, ISlideDirection.LEFT);
+    this.judgeSwapOrLevelUp(to);
+  }
+
+  /** 处理向右滑 */
+  private handleRight() {
+    console.info(`向右`);
+    if (
+      this.data.colZIndex >=
+      TableData.rows[this.data.rowZIndex].cols.length - 1
+    ) {
+      return;
+    }
+    const to = TableData.getDirToNode(this.data, ISlideDirection.RIGHT);
+    this.judgeSwapOrLevelUp(to);
+  }
+
+  /**
+   * 判断是否升级合并节点
+   * @param to IColData
+   */
+  private judgeSwapOrLevelUp(to: IColData) {
     if (to.level !== this.data.level) {
       this.swap(to);
       return;

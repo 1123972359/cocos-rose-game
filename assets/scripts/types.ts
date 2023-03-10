@@ -19,3 +19,11 @@ export interface IColData {
   colZIndex: number;
   level: number;
 }
+
+/** 滑动方向 */
+export enum ISlideDirection {
+  UP,
+  DOWN,
+  LEFT,
+  RIGHT,
+}

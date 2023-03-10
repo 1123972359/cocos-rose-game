@@ -22,13 +22,12 @@ export class Game extends Component {
   private floorPrefab: Prefab;
   @property(Prefab)
   private rowPrefab: Prefab;
-
+  /** 行数 */
+  private rowCount = 5;
+  private rowStepVec3 = new Vec3(43, -90);
   /** 列数 */
   private colCount = 5;
   private colStepVec3 = new Vec3(100, 4);
-  /** 行数 */
-  private rowCount = 5;
-  private rowStepVec3 = new Vec3(43, -93);
 
   start() {
     macro.ENABLE_MULTI_TOUCH = false;
@@ -78,6 +77,7 @@ export class Game extends Component {
    * 1. 游戏一开始阶段只有1级与2级
    */
   private createFloor(rowNode: Node, rowZIndex: number): IColData[] {
+    // 此处是为了让最后一行缺一个的特殊做法
     const arr = new Array(
       rowZIndex === this.rowCount - 1 ? this.colCount - 1 : this.colCount
     ).fill(0);
