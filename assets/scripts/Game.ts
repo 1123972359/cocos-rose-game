@@ -24,10 +24,10 @@ export class Game extends Component {
   private rowPrefab: Prefab;
   /** 行数 */
   private rowCount = 5;
-  private rowStepVec3 = new Vec3(43, -90);
+  private rowStepVec3 = new Vec3(50, -86);
   /** 列数 */
   private colCount = 5;
-  private colStepVec3 = new Vec3(100, 4);
+  private colStepVec3 = new Vec3(100, 0);
 
   start() {
     macro.ENABLE_MULTI_TOUCH = false;

@@ -21,8 +21,8 @@ class TweenUtils extends Single<TweenUtils>() {
       form.node.worldPosition.y
     );
     const toVec3 = new Vec3(to.node.worldPosition.x, to.node.worldPosition.y);
-    const moveTo = tween().to(0.25, { worldPosition: toVec3 });
-    const moveFrom = tween().to(0.25, { worldPosition: formVec3 });
+    const moveTo = tween().to(0.2, { worldPosition: toVec3 });
+    const moveFrom = tween().to(0.2, { worldPosition: formVec3 });
     return { moveTo, moveFrom, formVec3 };
   }
 
