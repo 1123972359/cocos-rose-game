@@ -10,7 +10,7 @@ import {
 } from "cc";
 import { IColData, IRowData } from "./types";
 import TableData from "./data/TableData";
-import { App } from "./App";
+import TweenUtils from "./common/TweenUtils";
 const { ccclass, property } = _decorator;
 
 @ccclass("Floor")
@@ -21,7 +21,12 @@ export class Floor extends Component {
   private isTouch = false;
 
   /** 当前的数据 */
-  public data: Partial<IColData> = {};
+  public data: IColData = {
+    node: null,
+    rowZIndex: -1,
+    colZIndex: -1,
+    level: -1,
+  };
 
   /** 手指落点 */
   private pos = {
@@ -49,7 +54,7 @@ export class Floor extends Component {
   }
 
   private onTouchStart(e: EventTouch) {
-    console.log(`onTouchStart`);
+    console.log(`onTouchStart`, e.currentTarget._id);
     if (this.isTouch) {
       return;
     }
@@ -144,7 +149,7 @@ export class Floor extends Component {
    * @param to 目标节点
    */
   private swap(to: IColData) {
-    const { moveTo, moveFrom } = this.getTweenMove(to);
+    const { moveTo, moveFrom } = TweenUtils.tweenMove(to, this.data);
     tween(this.node).sequence(moveTo, moveFrom).start();
   }
 
@@ -154,24 +159,9 @@ export class Floor extends Component {
    * @param to 目标节点
    */
   private levelUp(to: IColData) {
-    const tw = this.getTweenMove(to);
+    const tw = TweenUtils.tweenMove(to, this.data);
     this.reRenderNode(tw);
     this.renderLevelUp(to, tw);
-  }
-
-  /**
-   * 获取缓动的数据
-   * @param to 目标节点
-   */
-  private getTweenMove(to: IColData) {
-    const formVec3 = new Vec3(
-      this.node.worldPosition.x,
-      this.node.worldPosition.y
-    );
-    const toVec3 = new Vec3(to.node.worldPosition.x, to.node.worldPosition.y);
-    const moveTo = tween().to(0.25, { worldPosition: toVec3 });
-    const moveFrom = tween().to(0.25, { worldPosition: formVec3 });
-    return { moveTo, moveFrom, formVec3 };
   }
 
   /**
@@ -181,16 +171,9 @@ export class Floor extends Component {
    */
   private renderLevelUp(
     to: IColData,
-    tw: ReturnType<typeof this.getTweenMove>
+    tw: ReturnType<typeof TweenUtils.tweenMove>
   ) {
-    // todo !!!踩坑 缓动改变scale会使触摸失效
-    // tween(to.node)
-    //   .to(0.1, { scale: new Vec3(1, 1.5) })
-    //   .to(0.1, { scale: new Vec3(1.5, 1) })
-    //   .to(0.1, { scale: new Vec3(1, 1) })
-    //   .start();
-    tween(this.node).then(tw.moveTo.delay(0.25)).start();
-    // 目标节点升级
+    TweenUtils.shakeScale(to);
     to.level++;
     TableData.gameCtrl.renderLevel(to.level, to.node.getChildByName("level"));
   }
@@ -199,14 +182,12 @@ export class Floor extends Component {
    * 重新渲染
    * @param tw 缓动数据
    */
-  private reRenderNode(tw: ReturnType<typeof this.getTweenMove>) {
-    tween(this.node.getComponent(UIOpacity))
-      .to(0.25, {
-        opacity: 0,
-      })
+  private reRenderNode(tw: ReturnType<typeof TweenUtils.tweenMove>) {
+    tween(this.node).then(tw.moveTo).start();
+
+    TweenUtils.opacity(this.node, 0)
       .then(tw.moveFrom)
       .call(() => {
-        console.log(`重新渲染`);
         // 当前节点重新渲染
         this.data.level = TableData.gameCtrl.randomLevel();
         TableData.gameCtrl.renderLevel(
@@ -214,23 +195,10 @@ export class Floor extends Component {
           this.node.getChildByName("level")
         );
         this.node.worldPosition = tw.formVec3;
-        // this.node.scale = new Vec3(0, 0);
-        tween(this.node.getComponent(UIOpacity))
-          .to(0.25, {
-            opacity: 255,
-          })
-          .start();
+        TweenUtils.opacity(this.node, 255);
+        TweenUtils.shakeScale(this.data, 1.5, 0.1);
       })
       .start();
-
-    // tween(this.node)
-    //   .to(0.1, {
-    //     scale: new Vec3(1.5, 1.5),
-    //   })
-    //   .to(0.1, {
-    //     scale: new Vec3(1.0, 1.0),
-    //   })
-    //   .repeat(3)
-    //   .start();
+    TweenUtils.shakeScale(this.data, 0.25);
   }
 }

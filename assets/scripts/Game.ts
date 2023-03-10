@@ -142,6 +142,8 @@ export class Game extends Component {
 
   /**
    * 移除种子节点
+   * @deprecated 应该不需要此方法
+   *
    * @param colZIndex 列索引
    * @param rowZIndex 行索引
    */
