@@ -1,158 +1,17 @@
-import {
-  _decorator,
-  Component,
-  instantiate,
-  macro,
-  Node,
-  Prefab,
-  Sprite,
-  Vec3,
-} from "cc";
-import Table from "./data/Table";
-import { IColData, IRowData } from "./types";
-import LoadUtils from "./common/LoadUtils";
-import { Floor } from "./Floor";
+import { _decorator, Component } from "cc";
+import { Game } from "./Game";
+import TableData from "./data/TableData";
 const { ccclass, property } = _decorator;
 
 @ccclass("App")
 export class App extends Component {
-  @property(Node)
-  private gameAreaNode: Node;
-  @property(Prefab)
-  private tablePrefab: Prefab;
-  @property(Prefab)
-  private floorPrefab: Prefab;
-  @property(Prefab)
-  private rowPrefab: Prefab;
+  @property({
+    type: Game,
+  })
+  private gameCtrl: Game;
 
-  /** 列数 */
-  private colCount = 5;
-  private colStepVec3 = new Vec3(100, 4);
-  /** 行数 */
-  private rowCount = 5;
-  private rowStepVec3 = new Vec3(43, -93);
-
-  start() {
-    macro.ENABLE_MULTI_TOUCH = false;
-    this.initGame();
-  }
-
-  /** 渲染游戏 */
-  private initGame() {
-    Table.appCtrl = this.node.getComponent(App);
-    this.createTable();
-    this.createRow();
-  }
-
-  /**
-   * 创建表格
-   *
-   * 1. 根据正北方向为上，棋盘旋转-45°，即上方为西北方向
-   * 2. 一行5个floor，最后一行为4个，总共24个floor
-   */
-  private createTable() {
-    Table.node = instantiate(this.tablePrefab);
-    this.gameAreaNode.addChild(Table.node);
-  }
-
-  /** 根据行数创建行 */
-  private createRow() {
-    let node: Node;
-    Table.rows = new Array(this.rowCount).fill(0).map((_, index) => {
-      node = instantiate(this.rowPrefab);
-      node.setPosition(
-        new Vec3(index * this.rowStepVec3.x, index * this.rowStepVec3.y)
-      );
-      Table.node.insertChild(node, index);
-      const data: IRowData = {
-        node,
-        rowZIndex: index,
-        cols: this.createFloor(node, index),
-      };
-      return data;
-    });
-  }
-
-  /**
-   * 创建地板
-   * @param rowNode 行节点
-   * @param rowZIndex 行索引
-   * @param rowData
-   *
-   * 1. 游戏一开始阶段只有1级与2级
-   */
-  private createFloor(rowNode: Node, rowZIndex: number): IColData[] {
-    const arr = new Array(
-      rowZIndex === this.rowCount - 1 ? this.colCount - 1 : this.colCount
-    ).fill(0);
-    let level: number;
-    const cols: IColData[] = arr.map((_, index) => {
-      level = this.randomLevel();
-      return this.createSeed(rowNode, index, rowZIndex, level).data;
-    });
-    return cols;
-  }
-
-  /** 随机level */
-  public randomLevel() {
-    return Math.floor(Math.random() * 10) % 2 === 0 ? 1 : 2;
-  }
-
-  /**
-   * 创建种子节点
-   * @param rowNode 行节点
-   * @param colZIndex 列索引
-   * @param rowZIndex 行索引
-   */
-  public createSeed(
-    rowNode: Node,
-    colZIndex: number,
-    rowZIndex: number,
-    level: number
-  ) {
-    const node = instantiate(this.floorPrefab);
-    node.insertChild(this.renderLevel(level), 0);
-    node.setPosition(
-      new Vec3(colZIndex * this.colStepVec3.x, colZIndex * this.colStepVec3.y)
-    );
-    rowNode.insertChild(node, colZIndex);
-    const data = {
-      node,
-      rowZIndex,
-      colZIndex,
-      level,
-    };
-    node.getComponent(Floor).data = data;
-    return {
-      node,
-      data,
-    };
-  }
-
-  /**
-   * 渲染level
-   * @param node 节点
-   * @param level 等级
-   */
-  public renderLevel(level: number, node: Node = null) {
-    if (!node) {
-      node = new Node();
-      node.name = "level";
-    }
-    const sprite = node.getComponent(Sprite) ?? node.addComponent(Sprite);
-    LoadUtils.loadRes(sprite, `images/level${level}/spriteFrame`);
-    return node;
-  }
-
-  /**
-   * 移除种子节点
-   * @param colZIndex 列索引
-   * @param rowZIndex 行索引
-   */
-  public removeSeed(colZIndex: number, rowZIndex: number) {
-    Table.rows[rowZIndex].node.removeChild(
-      Table.rows[rowZIndex].cols[colZIndex].node
-    );
-    Table.rows[rowZIndex].cols.splice(colZIndex, 1);
+  protected start(): void {
+    TableData.gameCtrl = this.gameCtrl;
+    this.gameCtrl.init();
   }
 }

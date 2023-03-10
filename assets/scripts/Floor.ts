@@ -9,7 +9,7 @@ import {
   UIOpacity,
 } from "cc";
 import { IColData, IRowData } from "./types";
-import Table from "./data/Table";
+import TableData from "./data/TableData";
 import { App } from "./App";
 const { ccclass, property } = _decorator;
 
@@ -36,8 +36,8 @@ export class Floor extends Component {
    * 1. 可以设置一些误差
    */
   private direction = {
-    TOP: [-157, -134],
-    BOTTOM: [22, 49],
+    UP: [-157, -134],
+    DOWN: [22, 49],
     LEFT: [130, 163],
     RIGHT: [-40, -10],
   };
@@ -100,12 +100,12 @@ export class Floor extends Component {
    * @param deg 角度
    */
   private judgeDirection(deg: number) {
-    if (deg >= this.direction.TOP[0] && deg < this.direction.TOP[1]) {
+    if (deg >= this.direction.UP[0] && deg < this.direction.UP[1]) {
       // 向上
-      this.handleTop();
+      this.handleUp();
       return;
     }
-    if (deg >= this.direction.BOTTOM[0] && deg < this.direction.BOTTOM[1]) {
+    if (deg >= this.direction.DOWN[0] && deg < this.direction.DOWN[1]) {
       // 向下
       console.info(`向下`);
       return;
@@ -123,13 +123,14 @@ export class Floor extends Component {
   }
 
   /** 处理向上滑 */
-  private handleTop() {
+  private handleUp() {
     console.info(`向上`);
     if (this.data.rowZIndex === 0) {
       return;
     }
     /** 目标节点 */
-    const to = Table.rows[this.data.rowZIndex - 1].cols[this.data.colZIndex];
+    const to =
+      TableData.rows[this.data.rowZIndex - 1].cols[this.data.colZIndex];
     if (to.level !== this.data.level) {
       this.swap(to);
       return;
@@ -178,9 +179,11 @@ export class Floor extends Component {
    * @param to 目标节点
    * @param tw 缓动数据
    */
-  private renderLevelUp(to, tw: ReturnType<typeof this.getTweenMove>) {
+  private renderLevelUp(
+    to: IColData,
+    tw: ReturnType<typeof this.getTweenMove>
+  ) {
     // todo !!!踩坑 缓动改变scale会使触摸失效
-
     // tween(to.node)
     //   .to(0.1, { scale: new Vec3(1, 1.5) })
     //   .to(0.1, { scale: new Vec3(1.5, 1) })
@@ -189,7 +192,7 @@ export class Floor extends Component {
     tween(this.node).then(tw.moveTo.delay(0.25)).start();
     // 目标节点升级
     to.level++;
-    Table.appCtrl.renderLevel(to.level, to.node.getChildByName("level"));
+    TableData.gameCtrl.renderLevel(to.level, to.node.getChildByName("level"));
   }
 
   /**
@@ -205,8 +208,8 @@ export class Floor extends Component {
       .call(() => {
         console.log(`重新渲染`);
         // 当前节点重新渲染
-        this.data.level = Table.appCtrl.randomLevel();
-        Table.appCtrl.renderLevel(
+        this.data.level = TableData.gameCtrl.randomLevel();
+        TableData.gameCtrl.renderLevel(
           this.data.level,
           this.node.getChildByName("level")
         );

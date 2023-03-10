@@ -1,12 +1,12 @@
 import { Node } from "cc";
-import { App } from "../App";
 import Single from "../common/Single";
 import { IRowData } from "../types";
+import { Game } from "../Game";
 /**
  * 表格数据
  */
-class Table extends Single<Table>() {
-  public appCtrl: App;
+class TableData extends Single<TableData>() {
+  public gameCtrl: Game;
   /** 表格节点 */
   public node: Node;
   /** 行数据 */
@@ -17,4 +17,4 @@ class Table extends Single<Table>() {
   }
 }
 
-export default Table.instance as Table;
+export default TableData.instance as TableData;
