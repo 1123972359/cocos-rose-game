@@ -53,6 +53,26 @@ class TweenUtils extends Single<TweenUtils>() {
       })
       .start();
   }
+
+  /** 原地抖动 */
+  public shakePosition(node: Node) {
+    const diff = 6;
+    const formVec3 = new Vec3(node.worldPosition.x, node.worldPosition.y);
+    tween(node)
+      .sequence(
+        tween().to(0.1, {
+          worldPosition: new Vec3(formVec3.x + diff, formVec3.y - diff),
+        }),
+        tween().to(0.1, {
+          worldPosition: new Vec3(formVec3.x - diff, formVec3.y + diff),
+        })
+      )
+      .repeat(2)
+      .to(0.1, {
+        worldPosition: formVec3,
+      })
+      .start();
+  }
 }
 
 export default TweenUtils.instance as TweenUtils;

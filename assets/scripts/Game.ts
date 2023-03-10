@@ -12,6 +12,7 @@ import TableData from "./data/TableData";
 import { IColData, IRowData } from "./types";
 import { Floor } from "./Floor";
 import LoadUtils from "./common/LoadUtils";
+import Utils from "./common/Utils";
 const { ccclass, property } = _decorator;
 
 @ccclass("Game")
@@ -23,10 +24,10 @@ export class Game extends Component {
   @property(Prefab)
   private rowPrefab: Prefab;
   /** 行数 */
-  private rowCount = 5;
+  private rowCount = 3;
   private rowStepVec3 = new Vec3(50, -86);
   /** 列数 */
-  private colCount = 5;
+  private colCount = 3;
   private colStepVec3 = new Vec3(100, 0);
 
   start() {
@@ -37,6 +38,7 @@ export class Game extends Component {
   public init() {
     this.createTable();
     this.createRow();
+    TableData.initAliveData();
   }
 
   /**
@@ -117,6 +119,7 @@ export class Game extends Component {
       rowZIndex,
       colZIndex,
       level,
+      id: Utils.uuid,
     };
     node.getComponent(Floor).data = data;
     return {

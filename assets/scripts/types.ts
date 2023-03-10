@@ -18,6 +18,7 @@ export interface IColData {
   rowZIndex: number;
   colZIndex: number;
   level: number;
+  id: number;
 }
 
 /** 滑动方向 */
