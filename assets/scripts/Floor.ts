@@ -1,8 +1,9 @@
 import { _decorator, Component, EventTouch, Node, tween, Vec2, Vec3 } from "cc";
-import { IColData, ISlideDirection } from "./types";
+import { IColData } from "./types";
 import TableData from "./data/TableData";
 import TweenUtils from "./common/TweenUtils";
 import AliveRecord from "./data/AliveRecord";
+import Wash from "./data/Wash";
 const { ccclass, property } = _decorator;
 
 @ccclass("Floor")
@@ -102,23 +103,31 @@ export class Floor extends Component {
    */
   private judgeDirection(deg: number) {
     let to: IColData = null;
+    /** 是否接近几个方向，免得其他方向误触 */
+    let isCloseDir = false;
     if (deg >= this.direction.UP[0] && deg < this.direction.UP[1]) {
       // 向上
-      to = TableData.getDirToNode(this.data, ISlideDirection.UP);
+      to = TableData.getDirToNode(this.data)[0];
+      isCloseDir = true;
     } else if (deg >= this.direction.DOWN[0] && deg < this.direction.DOWN[1]) {
       // 向下
-      to = TableData.getDirToNode(this.data, ISlideDirection.DOWN);
+      to = TableData.getDirToNode(this.data)[1];
+      isCloseDir = true;
     } else if (deg >= this.direction.LEFT[0] && deg < this.direction.LEFT[1]) {
       // 向左
-      to = TableData.getDirToNode(this.data, ISlideDirection.LEFT);
+      to = TableData.getDirToNode(this.data)[2];
+      isCloseDir = true;
     } else if (
       deg >= this.direction.RIGHT[0] &&
       deg < this.direction.RIGHT[1]
     ) {
       // 向右
-      to = TableData.getDirToNode(this.data, ISlideDirection.RIGHT);
+      to = TableData.getDirToNode(this.data)[3];
+      isCloseDir = true;
     }
-    this.judgeSwapOrLevelUp(to);
+    if (isCloseDir) {
+      this.judgeSwapOrLevelUp(to);
+    }
   }
 
   /**
@@ -130,13 +139,14 @@ export class Floor extends Component {
       this.canNotMove();
       return;
     } else if (to.level !== this.data.level) {
-      this.swap(to);
+      this.unLevel(to);
       return;
     }
     this.levelUp(to);
     if (TableData.isDeath) {
       // 死局
-      console.log(`死局`, TableData.isDeath);
+      console.log(`死局`);
+      Wash.start();
     }
   }
 
@@ -145,11 +155,11 @@ export class Floor extends Component {
   }
 
   /**
-   * 移动节点
+   * 移动节点, 但不能升级
    * 1. 当前节点与目标节点交换位置(世界坐标系)
    * @param to 目标节点
    */
-  private swap(to: IColData) {
+  private unLevel(to: IColData) {
     const { moveTo, moveFrom } = TweenUtils.tweenMove(to, this.data);
     tween(this.node).sequence(moveTo, moveFrom).start();
   }

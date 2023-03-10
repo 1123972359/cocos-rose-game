@@ -1,5 +1,5 @@
 import Single from "../common/Single";
-import { IColData, IRowData, ISlideDirection } from "../types";
+import { IColData, IRowData } from "../types";
 import TableData from "./TableData";
 
 /** 成活记录类 */
@@ -7,13 +7,6 @@ class AliveRecord extends Single<AliveRecord>() {
   constructor() {
     super();
   }
-
-  private dirList = [
-    ISlideDirection.UP,
-    ISlideDirection.DOWN,
-    ISlideDirection.LEFT,
-    ISlideDirection.RIGHT,
-  ];
 
   /**
    * 成活记录
@@ -51,11 +44,6 @@ class AliveRecord extends Single<AliveRecord>() {
     rows.forEach((row) => {
       this.rowForAlive(row);
     });
-    console.log(
-      `refreshAlive init ===> `,
-      Reflect.ownKeys(this.aliveRecord).length,
-      Reflect.ownKeys(this.aliveRecord).map((item) => item as any)
-    );
   }
 
   /** 循环一行中所有的列 */
@@ -71,10 +59,9 @@ class AliveRecord extends Single<AliveRecord>() {
 
   /** 对单个col判断是否成活 */
   private colForAlive(col: IColData) {
-    let findCol: IColData;
     this.delete(col);
-    for (const dir of this.dirList) {
-      findCol = TableData.getDirToNode(col, dir);
+    const dirArr = TableData.getDirToNode(col);
+    for (const findCol of dirArr) {
       if (findCol?.level === col.level) {
         // 上下左右中有一个活，直接退出循环
         this.set(col);
@@ -95,9 +82,7 @@ class AliveRecord extends Single<AliveRecord>() {
       this.set(col);
       this.colForAlive(col);
       // 2. 找到两个节点的上下左右节点
-      dirColArr = this.dirList.map((dir) => {
-        return TableData.getDirToNode(col, dir);
-      });
+      dirColArr = TableData.getDirToNode(col);
       // =============================================
       // 3. 上下左右中的每个col
       // ---------------------------------------------

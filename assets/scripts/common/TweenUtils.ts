@@ -4,6 +4,8 @@ import Single from "./Single";
 
 /**
  * 缓动类
+ *
+ * todo 优化，交换动画时，不能被触摸
  */
 class TweenUtils extends Single<TweenUtils>() {
   constructor() {
@@ -72,6 +74,16 @@ class TweenUtils extends Single<TweenUtils>() {
         worldPosition: formVec3,
       })
       .start();
+  }
+
+  /**
+   * 交换世界位置
+   * - 需要延迟1秒时间
+   */
+  public swapMove(to: IColData, form: IColData) {
+    const { moveTo, moveFrom } = this.tweenMove(to, form);
+    tween(to.node).delay(1).then(moveFrom).start();
+    tween(form.node).delay(1).then(moveTo).start();
   }
 }
 

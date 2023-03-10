@@ -24,10 +24,10 @@ export class Game extends Component {
   @property(Prefab)
   private rowPrefab: Prefab;
   /** 行数 */
-  private rowCount = 5;
+  private rowCount = 3;
   private rowStepVec3 = new Vec3(49, -82);
   /** 列数 */
-  private colCount = 5;
+  private colCount = 3;
   private colStepVec3 = new Vec3(100, 0);
 
   start() {

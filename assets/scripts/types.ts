@@ -28,3 +28,11 @@ export enum ISlideDirection {
   LEFT,
   RIGHT,
 }
+
+/** 洗牌方向 */
+export enum IWashDirection {
+  LEFT_TOP,
+  RIGHT_TOP,
+  RIGHT_DOWN,
+  LEFT_DOWN,
+}
